@@ -1,5 +1,6 @@
 /**
  * Utilitário para gerenciamento do navegador Puppeteer
+ * Versão otimizada para Render
  */
 
 const puppeteer = require('puppeteer');
@@ -29,21 +30,42 @@ class BrowserManager {
     
     logger.info('Inicializando navegador Puppeteer');
     
-    this.initPromise = puppeteer.launch({
-      headless: config.puppeteer.headless,
-      args: config.puppeteer.args,
-      defaultViewport: config.puppeteer.defaultViewport,
-      executablePath: config.puppeteer.executablePath
-    }).then(browser => {
-      logger.info('Navegador inicializado com sucesso');
-      this.browser = browser;
-      this.isInitializing = false;
-      return browser;
-    }).catch(error => {
+    try {
+      // Configuração específica para o Render
+      const options = {
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-gpu'
+        ],
+        defaultViewport: {
+          width: 1920,
+          height: 1080
+        }
+      };
+      
+      // No Render, não especificamos o executablePath
+      this.initPromise = puppeteer.launch(options).then(browser => {
+        logger.info('Navegador inicializado com sucesso');
+        this.browser = browser;
+        this.isInitializing = false;
+        return browser;
+      }).catch(error => {
+        logger.error(`Erro ao inicializar navegador Puppeteer: ${error.message}`);
+        this.isInitializing = false;
+        throw error;
+      });
+    } catch (error) {
       logger.error(`Erro ao inicializar navegador: ${error.message}`);
       this.isInitializing = false;
       throw error;
-    });
+    }
 
     return this.initPromise;
   }
